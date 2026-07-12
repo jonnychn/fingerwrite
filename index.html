@@ -13,286 +13,262 @@
     --accent: #b0654a;
     --muted: #8a8377;
   }
-  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
-  html, body { height: 100%; overflow: hidden; background: var(--paper); font-family: ui-sans-serif, -apple-system, system-ui, sans-serif; }
-  body { display: flex; flex-direction: column; touch-action: none; }
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; }
+  html, body { height:100%; overflow:hidden; background:var(--paper); font-family: ui-sans-serif, -apple-system, system-ui, sans-serif; }
+  body { display:flex; flex-direction:column; touch-action:none; }
 
   header {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 14px 18px calc(14px) 18px;
-    padding-top: calc(14px + env(safe-area-inset-top));
-    border-bottom: 1px solid var(--edge);
+    display:flex; align-items:center; justify-content:space-between;
+    padding:14px 18px; padding-top:calc(14px + env(safe-area-inset-top));
+    border-bottom:1px solid var(--edge);
   }
-  .brand { font-size: 15px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink); font-weight: 600; }
-  .brand span { color: var(--accent); }
-  .hint { font-size: 12px; color: var(--muted); }
+  .brand { font-size:15px; letter-spacing:.14em; text-transform:uppercase; font-weight:600; color:var(--ink); }
+  .brand span { color:var(--accent); }
+  .hint { font-size:12px; color:var(--muted); }
 
-  .stage { position: relative; flex: 1; }
-  canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  .stage { position:relative; flex:1; }
+  canvas#paper { position:absolute; inset:0; width:100%; height:100%; display:block; }
 
-  /* the lens: a small magnified reticle that follows the finger, drawn above the fingertip */
   #lens {
-    position: absolute; width: 108px; height: 108px; border-radius: 50%;
-    border: 2px solid var(--ink); background: var(--paper);
-    box-shadow: 0 6px 22px rgba(26,34,51,0.22);
-    pointer-events: none; opacity: 0; transition: opacity 0.12s ease;
-    overflow: hidden; transform: translate(-50%, -50%);
+    position:absolute; width:112px; height:112px; border-radius:50%;
+    border:2px solid var(--ink); background:var(--paper);
+    box-shadow:0 6px 22px rgba(26,34,51,.22);
+    pointer-events:none; opacity:0; transition:opacity .12s ease;
+    overflow:hidden; transform:translate(-50%,-50%);
   }
-  #lens.on { opacity: 1; }
-  #lens canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
-  #lens .cross { position: absolute; inset: 0; }
-  #lens .cross::before, #lens .cross::after {
-    content: ""; position: absolute; background: rgba(176,101,74,0.5);
+  #lens.on { opacity:1; }
+  #lens canvas { position:absolute; inset:0; width:100%; height:100%; }
+  #lens .cross::before, #lens .cross::after { content:""; position:absolute; background:rgba(176,101,74,.55); }
+  #lens .cross::before { left:50%; top:50%; width:1px; height:18px; transform:translate(-50%,-50%); }
+  #lens .cross::after { top:50%; left:50%; height:1px; width:18px; transform:translate(-50%,-50%); }
+
+  #calib {
+    position:absolute; inset:0; display:none; place-items:center;
+    background:rgba(250,248,243,.94); text-align:center; padding:24px;
   }
-  #lens .cross::before { left: 50%; top: 42%; width: 1px; height: 16px; transform: translateX(-50%); }
-  #lens .cross::after { top: 50%; left: 42%; height: 1px; width: 16px; transform: translateY(-50%); }
+  #calib.on { display:grid; }
+  #calib .inner { max-width:270px; }
+  #calib h2 { font-size:16px; color:var(--ink); margin-bottom:8px; }
+  #calib p { font-size:13px; color:var(--muted); line-height:1.5; margin-bottom:22px; }
+  .target { width:8px; height:8px; border-radius:50%; background:var(--accent); margin:0 auto 10px; box-shadow:0 0 0 12px rgba(176,101,74,.12); }
 
   footer {
-    display: flex; gap: 10px; align-items: center;
-    padding: 12px 16px;
-    padding-bottom: calc(12px + env(safe-area-inset-bottom));
-    border-top: 1px solid var(--edge);
+    padding:10px 16px; padding-bottom:calc(10px + env(safe-area-inset-bottom));
+    border-top:1px solid var(--edge); display:flex; flex-direction:column; gap:9px;
   }
-  .swatches { display: flex; gap: 8px; }
-  .sw { width: 26px; height: 26px; border-radius: 50%; border: 2px solid transparent; }
-  .sw.sel { border-color: var(--muted); }
-  .sizes { display: flex; gap: 6px; margin-left: 4px; }
-  .sz { width: 34px; height: 30px; border: 1px solid var(--edge); border-radius: 7px; background: #fff; display: grid; place-items: center; }
-  .sz.sel { border-color: var(--ink); }
-  .sz i { display: block; border-radius: 50%; background: var(--ink); }
-  .spacer { flex: 1; }
-  button.act {
-    font: inherit; font-size: 13px; color: var(--ink); background: #fff;
-    border: 1px solid var(--edge); border-radius: 8px; padding: 8px 14px;
-  }
-  button.act:active { background: var(--edge); }
-  .lensToggle { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
-  .lensToggle input { width: 16px; height: 16px; accent-color: var(--accent); }
+  .row { display:flex; gap:9px; align-items:center; }
+  .sw { width:26px; height:26px; border-radius:50%; border:2px solid transparent; }
+  .sw.sel { border-color:var(--muted); }
+  .sz { width:32px; height:29px; border:1px solid var(--edge); border-radius:7px; background:#fff; display:grid; place-items:center; }
+  .sz.sel { border-color:var(--ink); }
+  .sz i { display:block; border-radius:50%; background:var(--ink); }
+  .spacer { flex:1; }
+  button.act { font:inherit; font-size:12px; color:var(--ink); background:#fff; border:1px solid var(--edge); border-radius:8px; padding:7px 12px; }
+  button.act:active { background:var(--edge); }
+  .ctrl { display:flex; align-items:center; gap:7px; flex:1; }
+  .ctrl label { font-size:11px; color:var(--muted); white-space:nowrap; }
+  .ctrl input[type=range] { flex:1; accent-color:var(--accent); height:18px; }
+  .ctrl output { font-size:11px; color:var(--ink); min-width:26px; text-align:right; font-variant-numeric:tabular-nums; }
+  .chk { display:flex; align-items:center; gap:5px; font-size:11px; color:var(--muted); }
+  .chk input { width:15px; height:15px; accent-color:var(--accent); }
 </style>
 </head>
 <body>
   <header>
     <div class="brand">NIB<span>.</span></div>
-    <div class="hint" id="hint">write with your fingertip</div>
+    <div class="hint" id="hint">ink lands at your fingertip</div>
   </header>
 
   <div class="stage" id="stage">
     <canvas id="paper"></canvas>
-    <div id="lens">
-      <canvas id="lensCanvas"></canvas>
-      <div class="cross"></div>
+    <div id="lens"><canvas id="lensCanvas"></canvas><div class="cross"></div></div>
+    <div id="calib">
+      <div class="inner">
+        <div class="target"></div>
+        <h2>Touch the dot</h2>
+        <p>Press where you naturally think the dot is. This measures the gap between your fingertip and the point iOS actually reports, then corrects for it.</p>
+        <button class="act" id="calibCancel">Cancel</button>
+      </div>
     </div>
   </div>
 
   <footer>
-    <div class="swatches" id="swatches"></div>
-    <div class="sizes" id="sizes"></div>
-    <div class="spacer"></div>
-    <label class="lensToggle"><input type="checkbox" id="lensChk" checked> lens</label>
-    <button class="act" id="undo">Undo</button>
-    <button class="act" id="clear">Clear</button>
+    <div class="row">
+      <div id="swatches" style="display:flex;gap:7px"></div>
+      <div id="sizes" style="display:flex;gap:5px"></div>
+      <div class="spacer"></div>
+      <button class="act" id="undo">Undo</button>
+      <button class="act" id="clear">Clear</button>
+    </div>
+    <div class="row">
+      <div class="ctrl">
+        <label for="off">Lift ink</label>
+        <input type="range" id="off" min="0" max="80" step="2" value="0">
+        <output id="offv">0</output>
+      </div>
+      <label class="chk"><input type="checkbox" id="lensChk" checked> lens</label>
+      <button class="act" id="calibBtn">Calibrate</button>
+    </div>
   </footer>
 
 <script>
-const paper = document.getElementById('paper');
-const ctx = paper.getContext('2d');
-const stage = document.getElementById('stage');
-const lens = document.getElementById('lens');
-const lensCanvas = document.getElementById('lensCanvas');
-const lctx = lensCanvas.getContext('2d');
-const hint = document.getElementById('hint');
+const paper=document.getElementById('paper'), ctx=paper.getContext('2d');
+const stage=document.getElementById('stage'), lens=document.getElementById('lens');
+const lensCanvas=document.getElementById('lensCanvas'), lctx=lensCanvas.getContext('2d');
+const hint=document.getElementById('hint'), calib=document.getElementById('calib');
 
-let DPR = Math.min(window.devicePixelRatio || 1, 3);
-let W = 0, H = 0;
+let DPR=Math.min(devicePixelRatio||1,3), W=0, H=0;
 
-// ---- config that makes finger-writing actually work ----
-const OFFSET_Y = 46;      // draw ink this many CSS px ABOVE the finger so the hand never covers it
-const LENS_ZOOM = 2.4;    // magnification in the reticle
-let SMOOTH = 0.55;        // 0 = raw, 1 = very laggy. one-euro-ish weighting
+// 0 = ink lands exactly at the fingertip. Slide up to decouple it.
+let OFFSET_Y = 0;
+// The constant gap between the centroid iOS reports and where your brain thinks
+// it is pointing. Small and fixed, which is exactly why it is correctable.
+let CAL = { x: 0, y: -7 };
+
+const LENS_ZOOM = 2.6;
+let SMOOTH = 0.5;
 let color = '#1a2233';
 let sizeBase = 2.4;
 
-// strokes stored as arrays of points for undo + re-render
-let strokes = [];
-let current = null;
-let lensOn = true;
+let strokes=[], current=null, lensOn=true, calibrating=false;
 
-function resize() {
-  const r = stage.getBoundingClientRect();
-  W = r.width; H = r.height;
-  DPR = Math.min(window.devicePixelRatio || 1, 3);
-  paper.width = W * DPR; paper.height = H * DPR;
-  lensCanvas.width = 108 * DPR; lensCanvas.height = 108 * DPR;
+function resize(){
+  const r=stage.getBoundingClientRect(); W=r.width; H=r.height;
+  DPR=Math.min(devicePixelRatio||1,3);
+  paper.width=W*DPR; paper.height=H*DPR;
+  lensCanvas.width=112*DPR; lensCanvas.height=112*DPR;
   redraw();
 }
-window.addEventListener('resize', resize);
+addEventListener('resize', resize);
 
-function redraw() {
-  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
-  ctx.clearRect(0, 0, W, H);
-  ctx.lineCap = 'round';
-  ctx.lineJoin = 'round';
-  for (const s of strokes) drawStroke(s);
-  if (current) drawStroke(current);
+function redraw(){
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+  ctx.clearRect(0,0,W,H);
+  ctx.lineCap='round'; ctx.lineJoin='round';
+  for(const s of strokes) drawStrokeOn(ctx,s);
   drawLens();
 }
 
-// draw a stroke with velocity-based tapering to fake pen pressure
-function drawStroke(s) {
-  const pts = s.pts;
-  if (pts.length < 2) {
-    if (pts.length === 1) {
-      ctx.beginPath();
-      ctx.fillStyle = s.color;
-      ctx.arc(pts[0].x, pts[0].y, s.size / 2, 0, Math.PI * 2);
-      ctx.fill();
-    }
-    return;
-  }
-  ctx.strokeStyle = s.color;
-  for (let i = 1; i < pts.length; i++) {
-    const a = pts[i - 1], b = pts[i];
-    ctx.beginPath();
-    ctx.lineWidth = (a.w + b.w) / 2;
-    ctx.moveTo(a.x, a.y);
-    // quadratic midpoint smoothing
-    const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
-    ctx.quadraticCurveTo(a.x, a.y, mx, my);
-    ctx.lineTo(b.x, b.y);
-    ctx.stroke();
-  }
-}
-
-function pointFrom(clientX, clientY, prev) {
-  const r = paper.getBoundingClientRect();
-  // the offset: the ink lives above the physical contact point
-  const rawX = clientX - r.left;
-  const rawY = clientY - r.top - OFFSET_Y;
-  let x = rawX, y = rawY;
-  if (prev) {
-    x = prev.x + (rawX - prev.x) * (1 - SMOOTH);
-    y = prev.y + (rawY - prev.y) * (1 - SMOOTH);
-  }
-  // velocity -> width. slower = thicker, faster = thinner
-  let w = sizeBase * 2.2;
-  if (prev) {
-    const d = Math.hypot(x - prev.x, y - prev.y);
-    const target = Math.max(sizeBase * 0.9, sizeBase * 3.2 - d * 0.35);
-    w = prev.w + (target - prev.w) * 0.4;
-  }
-  return { x, y, w, fingerX: rawX, fingerY: clientY - r.top };
-}
-
-function start(clientX, clientY) {
-  current = { color, size: sizeBase * 2.2, pts: [] };
-  const p = pointFrom(clientX, clientY, null);
-  current.pts.push(p);
-  strokes.push(current);
-  showLens(p);
-  redraw();
-}
-function move(clientX, clientY) {
-  if (!current) return;
-  const prev = current.pts[current.pts.length - 1];
-  const p = pointFrom(clientX, clientY, prev);
-  current.pts.push(p);
-  showLens(p);
-  redraw();
-}
-function end() {
-  current = null;
-  hideLens();
-}
-
-function showLens(p) {
-  if (!lensOn) return;
-  lens.classList.add('on');
-  // position the lens above and slightly left of the finger, never under the hand
-  let lx = p.fingerX;
-  let ly = p.fingerY - OFFSET_Y - 78;
-  lx = Math.max(60, Math.min(W - 60, lx));
-  ly = Math.max(60, ly);
-  lens.style.left = lx + 'px';
-  lens.style.top = ly + 'px';
-  lens._focus = { x: p.x, y: p.y };
-}
-function hideLens() { lens.classList.remove('on'); }
-
-function drawLens() {
-  if (!lens.classList.contains('on') || !lens._focus) return;
-  const f = lens._focus;
-  const size = 108;
-  lctx.setTransform(DPR, 0, 0, DPR, 0, 0);
-  lctx.clearRect(0, 0, size, size);
-  lctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--paper');
-  lctx.fillRect(0, 0, size, size);
-  lctx.save();
-  lctx.translate(size / 2, size * 0.42);
-  lctx.scale(LENS_ZOOM, LENS_ZOOM);
-  lctx.translate(-f.x, -f.y);
-  lctx.lineCap = 'round'; lctx.lineJoin = 'round';
-  for (const s of strokes) drawStrokeOn(lctx, s);
-  lctx.restore();
-}
-function drawStrokeOn(c, s) {
-  const pts = s.pts;
-  if (pts.length < 2) return;
-  c.strokeStyle = s.color;
-  for (let i = 1; i < pts.length; i++) {
-    const a = pts[i - 1], b = pts[i];
-    c.beginPath();
-    c.lineWidth = (a.w + b.w) / 2;
-    const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
-    c.moveTo(a.x, a.y);
-    c.quadraticCurveTo(a.x, a.y, mx, my);
-    c.lineTo(b.x, b.y);
+function drawStrokeOn(c,s){
+  const p=s.pts;
+  if(p.length===1){ c.beginPath(); c.fillStyle=s.color; c.arc(p[0].x,p[0].y,p[0].w/2,0,Math.PI*2); c.fill(); return; }
+  c.strokeStyle=s.color;
+  for(let i=1;i<p.length;i++){
+    const a=p[i-1], b=p[i];
+    c.beginPath(); c.lineWidth=(a.w+b.w)/2;
+    const mx=(a.x+b.x)/2, my=(a.y+b.y)/2;
+    c.moveTo(a.x,a.y); c.quadraticCurveTo(a.x,a.y,mx,my); c.lineTo(b.x,b.y);
     c.stroke();
   }
 }
 
-// pointer events cover touch + mouse
-let active = false;
-stage.addEventListener('pointerdown', e => {
-  active = true; stage.setPointerCapture(e.pointerId);
-  hint.textContent = 'ink appears above your finger';
+function pointFrom(cx,cy,prev){
+  const r=paper.getBoundingClientRect();
+  const fx=cx-r.left, fy=cy-r.top;            // raw reported centroid
+  let x=fx+CAL.x, y=fy+CAL.y-OFFSET_Y;        // corrected, then optionally lifted
+  if(prev){
+    x=prev.x+(x-prev.x)*(1-SMOOTH);
+    y=prev.y+(y-prev.y)*(1-SMOOTH);
+  }
+  let w=sizeBase*2.2;
+  if(prev){
+    const d=Math.hypot(x-prev.x, y-prev.y);
+    const t=Math.max(sizeBase*0.9, sizeBase*3.2 - d*0.35);
+    w=prev.w+(t-prev.w)*0.4;
+  }
+  return {x,y,w,fx,fy};
+}
+
+function start(cx,cy){
+  current={color, pts:[]};
+  const p=pointFrom(cx,cy,null);
+  current.pts.push(p); strokes.push(current);
+  showLens(p); redraw();
+}
+function move(cx,cy){
+  if(!current) return;
+  const prev=current.pts[current.pts.length-1];
+  const p=pointFrom(cx,cy,prev);
+  current.pts.push(p); showLens(p); redraw();
+}
+function end(){ current=null; hideLens(); }
+
+function showLens(p){
+  if(!lensOn) return;
+  lens.classList.add('on');
+  let lx=Math.max(64, Math.min(W-64, p.fx-70));
+  let ly=Math.max(64, p.fy-OFFSET_Y-84);
+  lens.style.left=lx+'px'; lens.style.top=ly+'px';
+  lens._f={x:p.x, y:p.y};
+}
+function hideLens(){ lens.classList.remove('on'); }
+
+function drawLens(){
+  if(!lens.classList.contains('on')||!lens._f) return;
+  const f=lens._f, S=112;
+  lctx.setTransform(DPR,0,0,DPR,0,0);
+  lctx.clearRect(0,0,S,S);
+  lctx.fillStyle='#faf8f3'; lctx.fillRect(0,0,S,S);
+  lctx.save();
+  lctx.translate(S/2,S/2); lctx.scale(LENS_ZOOM,LENS_ZOOM); lctx.translate(-f.x,-f.y);
+  lctx.lineCap='round'; lctx.lineJoin='round';
+  for(const s of strokes) drawStrokeOn(lctx,s);
+  lctx.restore();
+}
+
+let active=false;
+stage.addEventListener('pointerdown', e=>{
+  if(calibrating){ doCalib(e); return; }
+  active=true; stage.setPointerCapture(e.pointerId);
   start(e.clientX, e.clientY);
 });
-stage.addEventListener('pointermove', e => {
-  if (!active) return;
-  // use coalesced events for smoother high-rate capture
+stage.addEventListener('pointermove', e=>{
+  if(!active) return;
   const evs = e.getCoalescedEvents ? e.getCoalescedEvents() : [e];
-  for (const ev of evs) move(ev.clientX, ev.clientY);
+  for(const ev of evs) move(ev.clientX, ev.clientY);
 });
-function up() { if (active) { active = false; end(); } }
+const up=()=>{ if(active){ active=false; end(); } };
 stage.addEventListener('pointerup', up);
 stage.addEventListener('pointercancel', up);
 
-// ---- controls ----
-const palette = ['#1a2233', '#b0654a', '#2f6b4f', '#375a9e', '#8a8377'];
-const sw = document.getElementById('swatches');
-palette.forEach((c, i) => {
-  const el = document.createElement('button');
-  el.className = 'sw' + (i === 0 ? ' sel' : '');
-  el.style.background = c; el.style.cssText += `width:26px;height:26px;border-radius:50%;`;
-  el.onclick = () => { color = c; [...sw.children].forEach(x => x.classList.remove('sel')); el.classList.add('sel'); };
-  sw.appendChild(el);
+document.getElementById('calibBtn').onclick=()=>{ calibrating=true; calib.classList.add('on'); };
+document.getElementById('calibCancel').onclick=e=>{ e.stopPropagation(); calibrating=false; calib.classList.remove('on'); };
+function doCalib(e){
+  const dot=calib.querySelector('.target').getBoundingClientRect();
+  const tx=dot.left+dot.width/2, ty=dot.top+dot.height/2;
+  let dx=tx-e.clientX, dy=ty-e.clientY;
+  CAL={ x: Math.max(-25,Math.min(25,dx)), y: Math.max(-25,Math.min(25,dy)) };
+  calibrating=false; calib.classList.remove('on');
+  hint.textContent = `calibrated ${CAL.x.toFixed(0)}, ${CAL.y.toFixed(0)}px`;
+}
+
+const palette=['#1a2233','#b0654a','#2f6b4f','#375a9e','#8a8377'];
+const sw=document.getElementById('swatches');
+palette.forEach((c,i)=>{
+  const b=document.createElement('button');
+  b.className='sw'+(i===0?' sel':''); b.style.background=c;
+  b.onclick=()=>{ color=c; [...sw.children].forEach(x=>x.classList.remove('sel')); b.classList.add('sel'); };
+  sw.appendChild(b);
+});
+const sizes=[{v:1.6,d:6},{v:2.4,d:9},{v:3.6,d:13}];
+const sz=document.getElementById('sizes');
+sizes.forEach((s,i)=>{
+  const b=document.createElement('button');
+  b.className='sz'+(i===1?' sel':'');
+  const d=document.createElement('i'); d.style.width=s.d+'px'; d.style.height=s.d+'px';
+  b.appendChild(d);
+  b.onclick=()=>{ sizeBase=s.v; [...sz.children].forEach(x=>x.classList.remove('sel')); b.classList.add('sel'); };
+  sz.appendChild(b);
 });
 
-const sizes = [{ v: 1.6, d: 6 }, { v: 2.4, d: 9 }, { v: 3.6, d: 13 }];
-const sz = document.getElementById('sizes');
-sizes.forEach((s, i) => {
-  const el = document.createElement('button');
-  el.className = 'sz' + (i === 1 ? ' sel' : '');
-  const dot = document.createElement('i');
-  dot.style.width = s.d + 'px'; dot.style.height = s.d + 'px';
-  el.appendChild(dot);
-  el.onclick = () => { sizeBase = s.v; [...sz.children].forEach(x => x.classList.remove('sel')); el.classList.add('sel'); };
-  sz.appendChild(el);
-});
-
-document.getElementById('undo').onclick = () => { strokes.pop(); redraw(); };
-document.getElementById('clear').onclick = () => { strokes = []; redraw(); };
-document.getElementById('lensChk').onchange = e => { lensOn = e.target.checked; if (!lensOn) hideLens(); };
+const off=document.getElementById('off'), offv=document.getElementById('offv');
+off.oninput=()=>{
+  OFFSET_Y=+off.value; offv.textContent=off.value;
+  hint.textContent = OFFSET_Y===0 ? 'ink lands at your fingertip' : `ink lifted ${OFFSET_Y}px`;
+};
+document.getElementById('lensChk').onchange=e=>{ lensOn=e.target.checked; if(!lensOn) hideLens(); };
+document.getElementById('undo').onclick=()=>{ strokes.pop(); redraw(); };
+document.getElementById('clear').onclick=()=>{ strokes=[]; redraw(); };
 
 resize();
 </script>
