@@ -24,7 +24,17 @@
   }
   .brand { font-size:15px; letter-spacing:.14em; text-transform:uppercase; font-weight:600; color:var(--ink); }
   .brand span { color:var(--accent); }
+  .hdr-right { display:flex; align-items:center; gap:10px; }
   .hint { font-size:12px; color:var(--muted); }
+  /* deliberately quiet: a reminder, not a call to action. lives in the header,
+     outside both the canvas and the tool row, so it can never be hit mid-stroke. */
+  .coffee {
+    display:grid; place-items:center; width:30px; height:30px; flex:none;
+    border:1px solid var(--edge); border-radius:8px; background:#fff;
+    color:var(--muted); text-decoration:none; opacity:.65; transition:opacity .15s, color .15s;
+  }
+  .coffee:active { opacity:1; color:var(--accent); }
+  @media (hover:hover) { .coffee:hover { opacity:1; color:var(--accent); } }
 
   .stage { position:relative; flex:1; }
   canvas#paper { position:absolute; inset:0; width:100%; height:100%; display:block; }
@@ -42,6 +52,14 @@
   #lens .cross::before { left:50%; top:50%; width:1px; height:18px; transform:translate(-50%,-50%); }
   #lens .cross::after { top:50%; left:50%; height:1px; width:18px; transform:translate(-50%,-50%); }
 
+  /* eraser ring follows the finger so you can see what you're about to remove */
+  #ering {
+    position:absolute; border:1.5px solid var(--accent); border-radius:50%;
+    background:rgba(176,101,74,.08); pointer-events:none; opacity:0;
+    transform:translate(-50%,-50%); transition:opacity .1s;
+  }
+  #ering.on { opacity:1; }
+
   #calib {
     position:absolute; inset:0; display:none; place-items:center;
     background:rgba(250,248,243,.94); text-align:center; padding:24px;
@@ -53,34 +71,57 @@
   .target { width:8px; height:8px; border-radius:50%; background:var(--accent); margin:0 auto 10px; box-shadow:0 0 0 12px rgba(176,101,74,.12); }
 
   footer {
-    padding:10px 16px; padding-bottom:calc(10px + env(safe-area-inset-bottom));
+    padding:10px 14px; padding-bottom:calc(10px + env(safe-area-inset-bottom));
     border-top:1px solid var(--edge); display:flex; flex-direction:column; gap:9px;
   }
-  .row { display:flex; gap:9px; align-items:center; }
-  .sw { width:26px; height:26px; border-radius:50%; border:2px solid transparent; }
+  .row { display:flex; gap:8px; align-items:center; }
+  .swwrap { display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
+  .sw { width:26px; height:26px; border-radius:50%; border:2px solid transparent; position:relative; flex:none; }
   .sw.sel { border-color:var(--muted); }
-  .sz { width:32px; height:29px; border:1px solid var(--edge); border-radius:7px; background:#fff; display:grid; place-items:center; }
+  .sw.add { background:#fff; border:1px dashed var(--muted); display:grid; place-items:center; font-size:15px; color:var(--muted); line-height:1; }
+  .sz { width:32px; height:29px; border:1px solid var(--edge); border-radius:7px; background:#fff; display:grid; place-items:center; flex:none; }
   .sz.sel { border-color:var(--ink); }
   .sz i { display:block; border-radius:50%; background:var(--ink); }
+  .tool { font:inherit; font-size:12px; padding:7px 11px; border:1px solid var(--edge); border-radius:8px; background:#fff; color:var(--ink); flex:none; }
+  .tool.sel { border-color:var(--ink); background:var(--ink); color:var(--paper); }
   .spacer { flex:1; }
-  button.act { font:inherit; font-size:12px; color:var(--ink); background:#fff; border:1px solid var(--edge); border-radius:8px; padding:7px 12px; }
+  button.act { font:inherit; font-size:12px; color:var(--ink); background:#fff; border:1px solid var(--edge); border-radius:8px; padding:7px 12px; flex:none; }
   button.act:active { background:var(--edge); }
-  .ctrl { display:flex; align-items:center; gap:7px; flex:1; }
+  button.act.primary { background:var(--accent); border-color:var(--accent); color:#fff; }
+  .ctrl { display:flex; align-items:center; gap:7px; flex:1; min-width:0; }
   .ctrl label { font-size:11px; color:var(--muted); white-space:nowrap; }
-  .ctrl input[type=range] { flex:1; accent-color:var(--accent); height:18px; }
-  .ctrl output { font-size:11px; color:var(--ink); min-width:26px; text-align:right; font-variant-numeric:tabular-nums; }
-  .chk { display:flex; align-items:center; gap:5px; font-size:11px; color:var(--muted); }
+  .ctrl input[type=range] { flex:1; min-width:0; accent-color:var(--accent); height:18px; }
+  .ctrl output { font-size:11px; color:var(--ink); min-width:24px; text-align:right; font-variant-numeric:tabular-nums; }
+  .chk { display:flex; align-items:center; gap:5px; font-size:11px; color:var(--muted); flex:none; }
   .chk input { width:15px; height:15px; accent-color:var(--accent); }
+  #picker { position:absolute; width:0; height:0; opacity:0; pointer-events:none; }
+  .toast {
+    position:fixed; left:50%; bottom:96px; transform:translateX(-50%);
+    background:var(--ink); color:var(--paper); font-size:12px;
+    padding:9px 15px; border-radius:20px; opacity:0; transition:opacity .2s;
+    pointer-events:none; z-index:20;
+  }
+  .toast.on { opacity:1; }
 </style>
 </head>
 <body>
   <header>
     <div class="brand">NIB<span>.</span></div>
-    <div class="hint" id="hint">ink lands at your fingertip</div>
+    <div class="hdr-right">
+      <div class="hint" id="hint">ink lands at your fingertip</div>
+      <a class="coffee" id="coffee" href="https://buymeacoffee.com/jonnyc" target="_blank" rel="noopener" aria-label="Buy me a coffee">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M17 8h1a3 3 0 0 1 0 6h-1"/>
+          <path d="M3 8h14v6a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4V8z"/>
+          <path d="M6 2v2M10 2v2M14 2v2"/>
+        </svg>
+      </a>
+    </div>
   </header>
 
   <div class="stage" id="stage">
     <canvas id="paper"></canvas>
+    <div id="ering"></div>
     <div id="lens"><canvas id="lensCanvas"></canvas><div class="cross"></div></div>
     <div id="calib">
       <div class="inner">
@@ -94,11 +135,15 @@
 
   <footer>
     <div class="row">
-      <div id="swatches" style="display:flex;gap:7px"></div>
+      <button class="tool sel" id="tPen">Pen</button>
+      <button class="tool" id="tEraser">Eraser</button>
       <div id="sizes" style="display:flex;gap:5px"></div>
       <div class="spacer"></div>
       <button class="act" id="undo">Undo</button>
       <button class="act" id="clear">Clear</button>
+    </div>
+    <div class="row">
+      <div class="swwrap" id="swatches"></div>
     </div>
     <div class="row">
       <div class="ctrl">
@@ -106,31 +151,36 @@
         <input type="range" id="off" min="0" max="80" step="2" value="0">
         <output id="offv">0</output>
       </div>
-      <label class="chk"><input type="checkbox" id="lensChk" checked> lens</label>
+      <label class="chk"><input type="checkbox" id="lensChk"> lens</label>
       <button class="act" id="calibBtn">Calibrate</button>
+      <button class="act primary" id="share">Share</button>
     </div>
   </footer>
+
+  <input type="color" id="picker" value="#b0654a">
+  <div class="toast" id="toast"></div>
 
 <script>
 const paper=document.getElementById('paper'), ctx=paper.getContext('2d');
 const stage=document.getElementById('stage'), lens=document.getElementById('lens');
 const lensCanvas=document.getElementById('lensCanvas'), lctx=lensCanvas.getContext('2d');
 const hint=document.getElementById('hint'), calib=document.getElementById('calib');
+const ering=document.getElementById('ering'), toastEl=document.getElementById('toast');
 
 let DPR=Math.min(devicePixelRatio||1,3), W=0, H=0;
 
-// 0 = ink lands exactly at the fingertip. Slide up to decouple it.
 let OFFSET_Y = 0;
-// The constant gap between the centroid iOS reports and where your brain thinks
-// it is pointing. Small and fixed, which is exactly why it is correctable.
 let CAL = { x: 0, y: -7 };
-
 const LENS_ZOOM = 2.6;
 let SMOOTH = 0.5;
 let color = '#1a2233';
 let sizeBase = 2.4;
+let tool = 'pen';                 // 'pen' | 'eraser'
+let lensOn = false;               // off by default now
 
-let strokes=[], current=null, lensOn=true, calibrating=false;
+let strokes=[], current=null, calibrating=false;
+
+function eraserRadius(){ return sizeBase * 7; }
 
 function resize(){
   const r=stage.getBoundingClientRect(); W=r.width; H=r.height;
@@ -151,8 +201,20 @@ function redraw(){
 
 function drawStrokeOn(c,s){
   const p=s.pts;
-  if(p.length===1){ c.beginPath(); c.fillStyle=s.color; c.arc(p[0].x,p[0].y,p[0].w/2,0,Math.PI*2); c.fill(); return; }
-  c.strokeStyle=s.color;
+  c.save();
+  if(s.erase){
+    // true erase: punch through everything beneath it
+    c.globalCompositeOperation='destination-out';
+    c.strokeStyle='rgba(0,0,0,1)';
+    c.fillStyle='rgba(0,0,0,1)';
+  } else {
+    c.globalCompositeOperation='source-over';
+    c.strokeStyle=s.color;
+    c.fillStyle=s.color;
+  }
+  if(p.length===1){
+    c.beginPath(); c.arc(p[0].x,p[0].y,p[0].w/2,0,Math.PI*2); c.fill(); c.restore(); return;
+  }
   for(let i=1;i<p.length;i++){
     const a=p[i-1], b=p[i];
     c.beginPath(); c.lineWidth=(a.w+b.w)/2;
@@ -160,40 +222,52 @@ function drawStrokeOn(c,s){
     c.moveTo(a.x,a.y); c.quadraticCurveTo(a.x,a.y,mx,my); c.lineTo(b.x,b.y);
     c.stroke();
   }
+  c.restore();
 }
 
 function pointFrom(cx,cy,prev){
   const r=paper.getBoundingClientRect();
-  const fx=cx-r.left, fy=cy-r.top;            // raw reported centroid
-  let x=fx+CAL.x, y=fy+CAL.y-OFFSET_Y;        // corrected, then optionally lifted
+  const fx=cx-r.left, fy=cy-r.top;
+  let x=fx+CAL.x, y=fy+CAL.y-OFFSET_Y;
   if(prev){
     x=prev.x+(x-prev.x)*(1-SMOOTH);
     y=prev.y+(y-prev.y)*(1-SMOOTH);
   }
-  let w=sizeBase*2.2;
-  if(prev){
-    const d=Math.hypot(x-prev.x, y-prev.y);
-    const t=Math.max(sizeBase*0.9, sizeBase*3.2 - d*0.35);
-    w=prev.w+(t-prev.w)*0.4;
+  let w;
+  if(tool==='eraser'){
+    w = eraserRadius()*2;              // constant, no tapering. an eraser is an eraser.
+  } else {
+    w = sizeBase*2.2;
+    if(prev){
+      const d=Math.hypot(x-prev.x, y-prev.y);
+      const t=Math.max(sizeBase*0.9, sizeBase*3.2 - d*0.35);
+      w=prev.w+(t-prev.w)*0.4;
+    }
   }
   return {x,y,w,fx,fy};
 }
 
 function start(cx,cy){
-  current={color, pts:[]};
+  current={ color, erase: tool==='eraser', pts:[] };
   const p=pointFrom(cx,cy,null);
   current.pts.push(p); strokes.push(current);
-  showLens(p); redraw();
+  showCursor(p); redraw();
 }
 function move(cx,cy){
   if(!current) return;
   const prev=current.pts[current.pts.length-1];
   const p=pointFrom(cx,cy,prev);
-  current.pts.push(p); showLens(p); redraw();
+  current.pts.push(p); showCursor(p); redraw();
 }
-function end(){ current=null; hideLens(); }
+function end(){ current=null; hideLens(); ering.classList.remove('on'); }
 
-function showLens(p){
+function showCursor(p){
+  if(tool==='eraser'){
+    const d=eraserRadius()*2;
+    ering.style.width=d+'px'; ering.style.height=d+'px';
+    ering.style.left=p.x+'px'; ering.style.top=p.y+'px';
+    ering.classList.add('on');
+  }
   if(!lensOn) return;
   lens.classList.add('on');
   let lx=Math.max(64, Math.min(W-64, p.fx-70));
@@ -207,6 +281,7 @@ function drawLens(){
   if(!lens.classList.contains('on')||!lens._f) return;
   const f=lens._f, S=112;
   lctx.setTransform(DPR,0,0,DPR,0,0);
+  lctx.globalCompositeOperation='source-over';
   lctx.clearRect(0,0,S,S);
   lctx.fillStyle='#faf8f3'; lctx.fillRect(0,0,S,S);
   lctx.save();
@@ -231,25 +306,50 @@ const up=()=>{ if(active){ active=false; end(); } };
 stage.addEventListener('pointerup', up);
 stage.addEventListener('pointercancel', up);
 
-document.getElementById('calibBtn').onclick=()=>{ calibrating=true; calib.classList.add('on'); };
-document.getElementById('calibCancel').onclick=e=>{ e.stopPropagation(); calibrating=false; calib.classList.remove('on'); };
-function doCalib(e){
-  const dot=calib.querySelector('.target').getBoundingClientRect();
-  const tx=dot.left+dot.width/2, ty=dot.top+dot.height/2;
-  let dx=tx-e.clientX, dy=ty-e.clientY;
-  CAL={ x: Math.max(-25,Math.min(25,dx)), y: Math.max(-25,Math.min(25,dy)) };
-  calibrating=false; calib.classList.remove('on');
-  hint.textContent = `calibrated ${CAL.x.toFixed(0)}, ${CAL.y.toFixed(0)}px`;
+// ---- tools ----
+const tPen=document.getElementById('tPen'), tEraser=document.getElementById('tEraser');
+function setTool(t){
+  tool=t;
+  tPen.classList.toggle('sel', t==='pen');
+  tEraser.classList.toggle('sel', t==='eraser');
+  hint.textContent = t==='eraser' ? 'eraser: size follows the stroke picker' : (OFFSET_Y? `ink lifted ${OFFSET_Y}px` : 'ink lands at your fingertip');
+  if(t!=='eraser') ering.classList.remove('on');
 }
+tPen.onclick=()=>setTool('pen');
+tEraser.onclick=()=>setTool('eraser');
 
-const palette=['#1a2233','#b0654a','#2f6b4f','#375a9e','#8a8377'];
+// ---- palette with custom colors ----
+let palette=['#1a2233','#b0654a','#2f6b4f','#375a9e','#8a8377'];
 const sw=document.getElementById('swatches');
-palette.forEach((c,i)=>{
-  const b=document.createElement('button');
-  b.className='sw'+(i===0?' sel':''); b.style.background=c;
-  b.onclick=()=>{ color=c; [...sw.children].forEach(x=>x.classList.remove('sel')); b.classList.add('sel'); };
-  sw.appendChild(b);
-});
+const picker=document.getElementById('picker');
+
+function renderPalette(){
+  sw.innerHTML='';
+  palette.forEach(c=>{
+    const b=document.createElement('button');
+    b.className='sw'+(c===color?' sel':'');
+    b.style.background=c;
+    b.onclick=()=>{ color=c; setTool('pen'); renderPalette(); };
+    // long press to remove a custom color
+    let t;
+    b.addEventListener('pointerdown',()=>{ t=setTimeout(()=>{
+      if(palette.length>1){ palette=palette.filter(x=>x!==c); if(color===c) color=palette[0]; renderPalette(); toast('color removed'); }
+    },600); });
+    ['pointerup','pointerleave','pointercancel'].forEach(ev=>b.addEventListener(ev,()=>clearTimeout(t)));
+    sw.appendChild(b);
+  });
+  const add=document.createElement('button');
+  add.className='sw add'; add.textContent='+';
+  add.onclick=()=>picker.click();
+  sw.appendChild(add);
+}
+picker.oninput=()=>{
+  const c=picker.value.toLowerCase();
+  if(!palette.includes(c)) palette.push(c);
+  color=c; setTool('pen'); renderPalette();
+};
+renderPalette();
+
 const sizes=[{v:1.6,d:6},{v:2.4,d:9},{v:3.6,d:13}];
 const sz=document.getElementById('sizes');
 sizes.forEach((s,i)=>{
@@ -264,13 +364,69 @@ sizes.forEach((s,i)=>{
 const off=document.getElementById('off'), offv=document.getElementById('offv');
 off.oninput=()=>{
   OFFSET_Y=+off.value; offv.textContent=off.value;
-  hint.textContent = OFFSET_Y===0 ? 'ink lands at your fingertip' : `ink lifted ${OFFSET_Y}px`;
+  if(tool==='pen') hint.textContent = OFFSET_Y===0 ? 'ink lands at your fingertip' : `ink lifted ${OFFSET_Y}px`;
 };
+document.getElementById('lensChk').checked=false;
 document.getElementById('lensChk').onchange=e=>{ lensOn=e.target.checked; if(!lensOn) hideLens(); };
 document.getElementById('undo').onclick=()=>{ strokes.pop(); redraw(); };
 document.getElementById('clear').onclick=()=>{ strokes=[]; redraw(); };
 
+document.getElementById('calibBtn').onclick=()=>{ calibrating=true; calib.classList.add('on'); };
+document.getElementById('calibCancel').onclick=e=>{ e.stopPropagation(); calibrating=false; calib.classList.remove('on'); };
+function doCalib(e){
+  const dot=calib.querySelector('.target').getBoundingClientRect();
+  const tx=dot.left+dot.width/2, ty=dot.top+dot.height/2;
+  let dx=tx-e.clientX, dy=ty-e.clientY;
+  CAL={ x: Math.max(-25,Math.min(25,dx)), y: Math.max(-25,Math.min(25,dy)) };
+  calibrating=false; calib.classList.remove('on');
+  hint.textContent = `calibrated ${CAL.x.toFixed(0)}, ${CAL.y.toFixed(0)}px`;
+}
+
+// ---- share ----
+function toast(msg){
+  toastEl.textContent=msg; toastEl.classList.add('on');
+  setTimeout(()=>toastEl.classList.remove('on'), 1800);
+}
+
+// flatten onto an opaque paper background, since the canvas is transparent
+// wherever the eraser punched through
+function flatten(){
+  const out=document.createElement('canvas');
+  out.width=paper.width; out.height=paper.height;
+  const o=out.getContext('2d');
+  o.fillStyle='#faf8f3';
+  o.fillRect(0,0,out.width,out.height);
+  o.drawImage(paper,0,0);
+  return out;
+}
+
+document.getElementById('share').onclick=async ()=>{
+  if(strokes.length===0){ toast('nothing to share yet'); return; }
+  const out=flatten();
+  const blob=await new Promise(r=>out.toBlob(r,'image/png'));
+  if(!blob){ toast('could not render image'); return; }
+  const file=new File([blob],'nib.png',{type:'image/png'});
+
+  // native share sheet: iOS Share sheet / Android share dialog
+  if(navigator.canShare && navigator.canShare({files:[file]})){
+    try {
+      await navigator.share({ files:[file], title:'Nib' });
+    } catch(err){
+      if(err.name!=='AbortError') toast('share cancelled');
+    }
+    return;
+  }
+
+  // fallback for browsers without file sharing (incl. desktop, some Android)
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url; a.download='nib.png'; a.click();
+  URL.revokeObjectURL(url);
+  toast('saved as nib.png');
+};
+
 resize();
+setTool('pen');
 </script>
 </body>
 </html>
